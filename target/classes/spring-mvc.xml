@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd">
+
+    <!-- 扫描注解，这样com.xjt包下的文件都能被扫描 -->
+    <context:component-scan base-package="com.xjt.controller"/>
+
+    <!--注册拦截器-->
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <!--排除拦截的路径-->
+            <mvc:exclude-mapping path="/login"/>
+            <!--拦截处理类-->
+            <bean class="com.xjt.interceptor.LoginInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+    <!-- 配置推荐使用注解驱动，会默认的加载上面的两个 HandlerMapping, HandlerAdapter -->
+    <mvc:annotation-driven/>
+
+    <!-- 方式1 给出默认的处理器,解决静态资源被拦截的问题 注意要放在webapp目录下,例如这里访问/images-->
+    <mvc:default-servlet-handler/>
+    <!--方式2 <mvc:resources mapping="/jsp/**" location="/WEB-INF/jsp/"/>-->
+    <!--方式3 web.xml新建serverlt-mapping-->
+
+
+    <!-- 视图解析器 配置返回视图的路径，以及识别后缀是jsp文件 -->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/jsp/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
+    <!--定义文件上传解析器 -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="UTF-8"></property>
+        <!-- 设定文件上传的最大值5MB，5*1024*1024-->
+        <property name="maxUploadSize" value="5242880"></property>
+    </bean>
+
+
+</beans>

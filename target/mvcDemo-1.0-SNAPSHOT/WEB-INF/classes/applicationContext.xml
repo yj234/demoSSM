@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+       http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd">
+
+
+    <!-- 加载properties文件 -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath:jdbc.properties"/>
+    </bean>
+
+    <!-- 配置数据源 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${driver}"/>
+        <property name="url" value="${url}"/>
+        <property name="username" value="${username}"/>
+        <property name="password" value="${password}"/>
+    </bean>
+
+    <!-- mybatis和spring完美整合，不需要mybatis的配置映射文件 -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 配置MyBaties全局配置文件:mybatis-config.xml -->
+        <property name="configLocation" value="classpath:mybatis.xml"/>
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 扫描model包 -->
+        <property name="typeAliasesPackage" value="com.xjt.model"/>
+        <!-- 扫描sql配置文件:mapper需要的xml文件-->
+        <property name="mapperLocations" value="classpath:mapper/*.xml"/>
+        <!--        <property name="configuration">-->
+        <!--            <bean class="org.apache.ibatis.session.Configuration">-->
+        <!--                <property name="mapUnderscoreToCamelCase" value="true"/>-->
+        <!--            </bean>-->
+        <!--        </property>-->
+    </bean>
+
+    <!-- Mapper动态代理开发，扫描dao接口包-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!-- 注入sqlSessionFactory -->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <!-- 给出需要扫描Dao接口包 -->
+        <property name="basePackage" value="com.xjt.mapper"/>
+    </bean>
+
+    <context:component-scan base-package="com.xjt.service"/>
+
+    <!-- 基于 @Transactional 的声明式事务管理 然后在具体的每个类上面写上改注解，以及要求的隔离级别，传输特性 如：BuyStockServiceImpl-->
+    <tx:annotation-driven/>
+    <!-- 更多的方式是基于aop-->
+
+    <!-- 1 事务管理 -->
+    <bean id="myTracnsactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--数据库连接池-->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!-- 2 为连接点指定事务属性 -->
+    <tx:advice id="txAdvice" transaction-manager="myTracnsactionManager">
+        <tx:attributes>
+            <!-- 为连接点指定事务属性 -->
+            <tx:method name="add*" isolation="DEFAULT" propagation="REQUIRED"/>
+            <tx:method name="buyStock" isolation="DEFAULT" propagation="REQUIRED" rollback-for="BuyStockException" read-only="false"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <aop:config>
+        <!-- 切入点配置 -->
+        <aop:pointcut expression="execution(* *..service.*.*(..))" id="point"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="point" />
+    </aop:config>
+
+
+    <!--<bean id="readWriteAdvice" class="org.springframework.aop.aspectj.AspectInstanceFactory" abstract="true">
+        <property name="txAdvice" ref="txAdvice"/>
+    </bean> 读写分类打开-->
+
+</beans>
